@@ -25,6 +25,18 @@
         <name>AuraDefinitionBundle</name>
     </types>
     <types>
+        <members>Friend_Ships</members>
+        <name>CustomApplication</name>
+    </types>
+    <types>
+        <members>Friend_Ships</members>
+        <name>CustomTab</name>
+    </types>
+    <types>
+        <members>Friend_Ships</members>
+        <name>FlexiPage</name>
+    </types>
+    <types>
         <members>*</members>
         <name>LightningComponentBundle</name>
     </types>
