@@ -2,18 +2,18 @@
  * Created by olehbohdanovych on 02.02.2021.
  */
 
-import { LightningElement, wire } from "lwc";
+import { LightningElement, wire, api, track } from "lwc";
 
+import { refreshApex } from "@salesforce/apex";
 import getBoats from "@salesforce/apex/BoatDataService.getBoats";
+import updateBoatList from "@salesforce/apex/BoatDataService.updateBoatList";
 
-import {
-  subscribe,
-  unsubscribe,
-  APPLICATION_SCOPE,
-  MessageContext
-} from 'lightning/messageService';
-
+import { publish, MessageContext } from 'lightning/messageService';
 import BOATMC from '@salesforce/messageChannel/BoatMessageChannel__c';
+
+import { updateRecord } from "lightning/uiRecordApi";
+
+import { ShowToastEvent } from "lightning/platformShowToastEvent";
 
 const SUCCESS_TITLE = 'Success';
 const MESSAGE_SHIP_IT = 'Ship it!';
@@ -23,10 +23,26 @@ const ERROR_VARIANT = 'error';
 
 export default class BoatSearchResults extends LightningElement {
   selectedBoatId;
-  columns = [];
+  columns = [
+    { label: "Name", fieldName: "Name", editable: "true" },
+    {
+      label: "Length",
+      fieldName: "Length__c",
+      type: "number",
+      editable: "true"
+    },
+    {
+      label: "Price",
+      fieldName: "Price__c",
+      type: "currency",
+      editable: "true"
+    },
+    { label: "Description", fieldName: "Description__c", editable: "true" }
+  ];
   boatTypeId = '';
   boats;
   isLoading = false;
+  @track draftValues = [];
 
   // wired message context
   @wire(MessageContext)
@@ -39,18 +55,38 @@ export default class BoatSearchResults extends LightningElement {
 
   // public function that updates the existing boatTypeId property
   // uses notifyLoading
-  searchBoats(boatTypeId) { }
+  @api
+  searchBoats(boatTypeId) {
+    this.notifyLoading(true);
+    this.boatTypeId = boatTypeId;
+    this.notifyLoading(false);
+  }
 
   // this public function must refresh the boats asynchronously
   // uses notifyLoading
-  refresh() { }
+  @api
+  async refresh() {
+    this.notifyLoading(true);
+    await refreshApex(this.boats);
+    this.notifyLoading(false);
+  }
 
   // this function must update selectedBoatId and call sendMessageService
-  updateSelectedTile() { }
+  updateSelectedTile(event) {
+    const eventBoatId = event.detail.boatId;
+    if (this.selectedBoatId !== eventBoatId) {
+      this.selectedBoatId = eventBoatId;
+
+      this.sendMessageService(eventBoatId);
+    }
+  }
 
   // Publishes the selected boat Id on the BoatMC.
   sendMessageService(boatId) {
     // explicitly pass boatId to the parameter recordId
+    const payload = { recordId: boatId };
+
+    publish(this.messageContext, BOATMC, payload);
   }
 
   // The handleSave method must save the changes in the Boat Editor
@@ -60,13 +96,42 @@ export default class BoatSearchResults extends LightningElement {
   // clear lightning-datatable draft values
   handleSave(event) {
     // notify loading
+    this.notifyLoading(true);
     const updatedFields = event.detail.draftValues;
     // Update the records via Apex
     updateBoatList({data: updatedFields})
-      .then(() => {})
-      .catch(error => {})
-      .finally(() => {});
+      .then(() => {
+        this.dispatchEvent(
+          new ShowToastEvent({
+            title: SUCCESS_TITLE,
+            message: MESSAGE_SHIP_IT,
+            variant: SUCCESS_VARIANT
+          })
+        );
+
+        this.refresh();
+      })
+      .catch((error) => {
+        this.dispatchEvent(
+          new ShowToastEvent({
+            title: ERROR_TITLE,
+            message: error.message,
+            variant: ERROR_VARIANT
+          })
+        );
+      })
+      .finally(() => {
+        this.draftValues = [];
+      });
   }
   // Check the current value of isLoading before dispatching the doneloading or loading custom event
-  notifyLoading(isLoading) { }
+  notifyLoading(isLoading) {
+    this.isLoading = isLoading;
+
+    if (this.isLoading) {
+      this.dispatchEvent(new CustomEvent("loading"));
+    } else {
+      this.dispatchEvent(new CustomEvent("doneloading"));
+    }
+  }
 }
