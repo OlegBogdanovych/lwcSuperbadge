@@ -11,8 +11,6 @@ import updateBoatList from "@salesforce/apex/BoatDataService.updateBoatList";
 import { publish, MessageContext } from 'lightning/messageService';
 import BOATMC from '@salesforce/messageChannel/BoatMessageChannel__c';
 
-import { updateRecord } from "lightning/uiRecordApi";
-
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 
 const SUCCESS_TITLE = 'Success';
