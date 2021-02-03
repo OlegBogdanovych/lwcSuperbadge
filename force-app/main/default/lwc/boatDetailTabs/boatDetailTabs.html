@@ -17,9 +17,8 @@
     <lightning-tabset variant="scoped">
       <lightning-tab label={label.labelDetails}>
         <lightning-card title={boatName} icon-name={detailsTabIconName}>
-          <div slot="actions">
-            <lightning-button label={label.labelFullDetails} onclick={navigateToRecordViewPage}></lightning-button>
-          </div>
+
+          <lightning-button slot="actions" label={label.labelFullDetails} onclick={navigateToRecordViewPage}></lightning-button>
 
           <p class="slds-var-p-horizontal_small">
             <lightning-record-view-form
@@ -35,7 +34,9 @@
         </lightning-card>
       </lightning-tab>
 
-      <lightning-tab label={label.labelReviews} value="reviews"></lightning-tab>
+      <lightning-tab label={label.labelReviews} value="reviews">
+        <c-boat-reviews record-id={boatId}></c-boat-reviews>
+      </lightning-tab>
 
       <lightning-tab label={label.labelAddReview}>
         <c-boat-add-review-form record-id={boatId} oncreatereview={handleReviewCreated}></c-boat-add-review-form>
